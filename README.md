@@ -23,5 +23,5 @@ std::string processPath = "ls";
 
 spawnchild::SyncSpawn lsSpawned(processPath, args, input);
 
-std::string result = lsSpawned.getResult();
+std::string getResult = lsSpawned.getResult();
 ```
