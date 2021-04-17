@@ -9,6 +9,8 @@
 
 #define READ_BUFFER_SIZE 255
 
+using namespace spawnchild;
+
 bool Spawn::isChild(){
     return this->processPID == 0;
 }

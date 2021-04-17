@@ -5,6 +5,8 @@
 #include <signal.h>
 #include "AsyncSpawn.h"
 
+using namespace spawnchild;
+
 AsyncSpawn::AsyncSpawn(std::string& processPath, std::vector<std::string>& args, AsyncSpawnEvents events)
 : Spawn(processPath, args){
     this->events = events;

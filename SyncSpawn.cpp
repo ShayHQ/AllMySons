@@ -1,6 +1,8 @@
 #include <sys/wait.h>
 #include "SyncSpawn.h"
 
+using namespace spawnchild;
+
 SyncSpawn::SyncSpawn(std::string& processPath, std::vector<std::string>& args, std::string& input)
 : Spawn(processPath, args){
     this->input = input;

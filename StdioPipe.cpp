@@ -3,6 +3,8 @@
 #include <poll.h>
 #include "Spawn.h"
 
+using namespace spawnchild;
+
 StdioPipe::StdioPipe(){
     bool isException = false;
 

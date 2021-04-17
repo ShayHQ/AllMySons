@@ -2,6 +2,8 @@
 #include "SyncSpawn.h"
 #include <iostream>
 
+using namespace spawnchild;
+
 int main(){
     std::string input = "2332\n";
     std::vector<std::string> args;
