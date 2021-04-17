@@ -7,7 +7,7 @@ use cmake to integrate into your project
 
 ```
 add_subdirectory(spawnchild)
-add_target(spawned spawned.cpp)
+add_executable(spawned spawned.cpp)
 target_link_libraries(spawned ${SpawnChild_LIBS})
 ```
 
