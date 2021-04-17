@@ -51,7 +51,7 @@ events.onExit = [&isExited, &finished](int code, bool crashed){
 events.onMessage = [](std::string data){
     std::string got = data;
 };
-AsyncSpawn childProg(processPath, args, events);
+spawnchild::AsyncSpawn childProg(processPath, args, events);
 
 childProg.send("12");
 
