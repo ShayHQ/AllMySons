@@ -1,6 +1,6 @@
-# SpawnChild
+# All My Sons
 
-written in C++,
+child process library written in C++,
 tested in Linux environment
 
 use cmake to integrate into your project
