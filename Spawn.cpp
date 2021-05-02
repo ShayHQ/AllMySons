@@ -43,6 +43,7 @@ std::vector<char*> Spawn::getCArgs(std::string& processPath, std::vector<std::st
 }
 
 Spawn::Spawn(std::string& processPath, std::vector<std::string>& args){
+    this->path = processPath;
     setupPipes();
     runProcess(getCArgs(processPath ,args));
 }

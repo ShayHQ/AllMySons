@@ -29,6 +29,7 @@ namespace spawnchild{
     protected:
         StdioPipe* redirected_stdio = nullptr;
         pid_t processPID = 0;
+        std::string path;
         int status;
         
     public:

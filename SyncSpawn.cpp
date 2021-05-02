@@ -18,6 +18,8 @@ void SyncSpawn::sync(){
             std::string msg = this->processPID + " Program was terminated with non zero code";
             std::__throw_runtime_error(msg.c_str());
         }
+    }else{
+        throw std::runtime_error("Process: "+ this->path +": " + this->redirected_stdio->readErr());
     }
 }
 
