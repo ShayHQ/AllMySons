@@ -1,13 +1,26 @@
-#include <sys/wait.h>
+
 #include "SyncSpawn.h"
 
 using namespace spawnchild;
 
-SyncSpawn::SyncSpawn(std::string& processPath, std::vector<std::string>& args, std::string& input)
-: Spawn(processPath, args){
-    this->input = input;
-    sync();
+#ifdef WIN32
+#include <windows.h>
+
+void SyncSpawn::sync(){
+    this->redirected_stdio->writeIn(this->input);
+    WaitForSingleObject(this->processHandle, 0);
+    if (this->status != STILL_ACTIVE){
+        int returnedStatus = this->status;
+        if (returnedStatus){
+            std::string msg = this->processPID + " Program was terminated with non zero code";
+            std::__throw_runtime_error(msg.c_str());
+        }
+    }else{
+        throw std::runtime_error("Process: "+ this->path +": " + this->redirected_stdio->readErr());
+    }
 }
+#else
+#include <sys/wait.h>
 
 void SyncSpawn::sync(){
     this->redirected_stdio->writeIn(this->input);
@@ -21,6 +34,14 @@ void SyncSpawn::sync(){
     }else{
         throw std::runtime_error("Process: "+ this->path +": " + this->redirected_stdio->readErr());
     }
+}
+
+#endif
+
+SyncSpawn::SyncSpawn(std::string& processPath, std::vector<std::string>& args, std::string& input)
+: Spawn(processPath, args){
+    this->input = input;
+    sync();
 }
 
 std::string SyncSpawn::getResult(){

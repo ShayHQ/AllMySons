@@ -1,26 +1,42 @@
-#include <sys/wait.h>
-#include <sys/types.h>
 #include <future>
-#include <mutex>
 #include <signal.h>
 #include "AsyncSpawn.h"
 
 using namespace spawnchild;
 
-AsyncSpawn::AsyncSpawn(std::string& processPath, std::vector<std::string>& args, AsyncSpawnEvents events)
-: Spawn(processPath, args){
-    this->events = events;
-    connectEvents();
+#ifdef WIN32
+#include <windows.h>
+void AsyncSpawn::onExit(){
+    HANDLE mutex = CreateMutex(nullptr, false, nullptr);
+    while (!this->stop){
+        WaitForSingleObject(this->processHandle, 0);
+        if (GetExitCodeProcess(this->processHandle, (LPDWORD)&this->status) && this->status != STILL_ACTIVE){
+            if (!this->status){
+                events.onExit(this->status, false);
+                this->stop = true;
+            }else{
+                events.onExit(this->status, true);
+                this->stop = true;
+            }
+        }else{
+            CloseHandle(mutex);
+            throw GetLastError();
+        }
+        CloseHandle(mutex);
+    }
 }
 
-AsyncSpawn::~AsyncSpawn(){
-    killProcess();
-    waitEvents();
+void AsyncSpawn::killProcess(){
+    if (isAlive()){
+        TerminateProcess(this->processHandle, 0);
+    }
+    destroyPipes();
+    this->stop = true;
 }
-
-void AsyncSpawn::send(std::string data){
-    this->redirected_stdio->writeIn(data);
-}
+#else
+#include <sys/wait.h>
+#include <sys/types.h>
+#include <mutex>
 
 void AsyncSpawn::onExit(){
     while (!this->stop){
@@ -37,6 +53,30 @@ void AsyncSpawn::onExit(){
         }
         mtx.unlock();
     }
+}
+
+void AsyncSpawn::killProcess(){
+    if (isAlive()){
+        kill(this->processPID, SIGKILL);
+    }
+    destroyPipes();
+    this->stop = true;
+}
+#endif
+
+void AsyncSpawn::send(std::string data){
+    this->redirected_stdio->writeIn(data);
+}
+
+AsyncSpawn::AsyncSpawn(std::string& processPath, std::vector<std::string>& args, AsyncSpawnEvents events)
+: Spawn(processPath, args){
+    this->events = events;
+    connectEvents();
+}
+
+AsyncSpawn::~AsyncSpawn(){
+    killProcess();
+    waitEvents();
 }
 
 void AsyncSpawn::onMessage(){
@@ -67,12 +107,4 @@ void AsyncSpawn::waitEvents(){
     for (const auto& listener : eventListeners){
         listener.wait();
     }
-}
-
-void AsyncSpawn::killProcess(){
-    if (isAlive()){
-        kill(this->processPID, SIGKILL);
-    }
-    destroyPipes();
-    this->stop = true;
 }

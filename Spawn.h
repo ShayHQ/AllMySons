@@ -6,12 +6,22 @@
 
 #define READ_BUFFER_SIZE 255
 
+#define PID_T unsigned int
+
+#ifdef WIN32
+typedef void* HANDLE;
+typedef void* ProcStartInfo;
+#define PipeHandle HANDLE
+#else
+#define PipeHandle int
+#endif
+
 namespace spawnchild{
     class StdioPipe{
 
-        int redirect_out[2];
-        int redirect_in[2];
-        int redirect_err[2];
+        PipeHandle redirect_out[2];
+        PipeHandle redirect_in[2];
+        PipeHandle redirect_err[2];
     public:
         virtual std::string readOut();
         virtual void writeIn(std::string);
@@ -19,8 +29,11 @@ namespace spawnchild{
     protected:
         StdioPipe();
         ~StdioPipe();
+#ifdef WIN32
+        void replace_stdio(ProcStartInfo startInfo);
+#else
         void replace_stdio();
-
+#endif
         friend class Spawn;
     };
 
@@ -28,7 +41,8 @@ namespace spawnchild{
     {
     protected:
         StdioPipe* redirected_stdio = nullptr;
-        pid_t processPID = 0;
+        PID_T processPID = 0;
+        HANDLE processHandle = nullptr;
         std::string path;
         int status;
         
@@ -44,4 +58,4 @@ namespace spawnchild{
         virtual void setupPipes();
         void destroyPipes();
     };
-}
+};
