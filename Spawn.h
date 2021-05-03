@@ -9,16 +9,16 @@
 #define PID_T unsigned int
 
 #ifdef WIN32
-typedef void* HANDLE;
 typedef void* ProcStartInfo;
 #define PipeHandle HANDLE
 #else
+typedef void* HANDLE;
 #define PipeHandle int
 #endif
 
 namespace spawnchild{
     class StdioPipe{
-
+        bool isBlocking = true;
         PipeHandle redirect_out[2];
         PipeHandle redirect_in[2];
         PipeHandle redirect_err[2];
@@ -26,6 +26,7 @@ namespace spawnchild{
         virtual std::string readOut();
         virtual void writeIn(std::string);
         virtual std::string readErr();
+        inline void setReadBlocking(bool block) {this->isBlocking = block;}
     protected:
         StdioPipe();
         ~StdioPipe();

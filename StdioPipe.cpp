@@ -2,7 +2,7 @@
 #include <unistd.h>
 #include "Spawn.h"
 
-std::string readStream(int fd);
+std::string readStream(int fd, bool isBlocking);
 
 using namespace spawnchild;
 #ifdef WIN32
@@ -50,7 +50,7 @@ StdioPipe::~StdioPipe(){
     CloseHandle(this->redirect_err[1]);
 }
 
-std::string readStream(int fd){
+std::string readStream(int fd, bool isBlocking){
     char readBuffer[READ_BUFFER_SIZE];
     DWORD bytesRead = 0;
     std::string result;
@@ -71,6 +71,8 @@ void StdioPipe::writeIn(std::string data){
 }
 
 #else
+#include <poll.h>
+
 StdioPipe::StdioPipe(){
     bool isException = false;
 
@@ -100,12 +102,22 @@ StdioPipe::~StdioPipe(){
     close(this->redirect_err[1]);
 }
 
-std::string readStream(int fd){
+bool isDataAvailable(int fd, bool lie){
+    struct pollfd queryRead;
+
+    queryRead.fd = fd;
+    queryRead.events = POLLIN;
+    queryRead.revents = 0;
+    int success = poll(&queryRead, 1, 100);
+    return lie || (success > 0 && queryRead.revents & POLLIN);
+}
+
+std::string readStream(int fd, bool isBlocking){
     char readBuffer[READ_BUFFER_SIZE];
     ssize_t bytesRead;
     std::string result;
 
-    while ((bytesRead = read(fd, readBuffer, READ_BUFFER_SIZE - 1)) > 0){
+    while (isDataAvailable(fd, isBlocking) && (bytesRead = read(fd, readBuffer, READ_BUFFER_SIZE - 1)) > 0){
         readBuffer[bytesRead] = 0;
         result.append(readBuffer);
 
@@ -126,10 +138,9 @@ void StdioPipe::writeIn(std::string data){
 }
 #endif
 std::string StdioPipe::readOut(){
-    return readStream((int)this->redirect_out[0]);
+    return readStream((int)this->redirect_out[0], this->isBlocking);
 }
 
 std::string StdioPipe::readErr(){
-    return readStream((int)this->redirect_err[0]);
+    return readStream((int)this->redirect_err[0], this->isBlocking);
 }
-
