@@ -57,6 +57,7 @@ void Spawn::runProcess(std::vector<char *> args){
     this->processHandle = piProcInfo.hProcess;
 }
 #else
+#include <unistd.h>
 #include <sys/wait.h>
 #include <sys/types.h>
 #include <fcntl.h>

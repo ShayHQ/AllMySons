@@ -4,7 +4,7 @@
 #ifdef WIN32
 #define CHILD_PROCESS_PATH "./Debug/child.exe"
 #else
-#define CHILD_PROCESS_PATH "./child.exe"
+#define CHILD_PROCESS_PATH "./child"
 #endif
 using namespace spawnchild;
 
