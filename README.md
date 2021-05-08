@@ -1,7 +1,7 @@
 # All My Sons
 
 child process library written in C++,
-tested in Linux environment
+tested in Windows 10 & Linux environments
 
 use cmake to integrate into your project
 
