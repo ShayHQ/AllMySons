@@ -9,7 +9,7 @@ using namespace spawnchild;
 void AsyncSpawn::onExit(){
     HANDLE mutex = CreateMutex(nullptr, false, nullptr);
     while (!this->stop){
-        WaitForSingleObject(this->processHandle, 0);
+        WaitForSingleObject(this->processHandle, INFINITE);
         if (GetExitCodeProcess(this->processHandle, (LPDWORD)&this->status) && this->status != STILL_ACTIVE){
             if (!this->status){
                 events.onExit(this->status, false);
@@ -71,6 +71,7 @@ void AsyncSpawn::send(std::string data){
 AsyncSpawn::AsyncSpawn(std::string& processPath, std::vector<std::string>& args, AsyncSpawnEvents events)
 : Spawn(processPath, args){
     this->events = events;
+    this->redirected_stdio->setReadBlocking(false);
     connectEvents();
 }
 
@@ -98,9 +99,9 @@ void AsyncSpawn::onError(){
 }
 
 void AsyncSpawn::connectEvents(){
-    eventListeners.push_back(std::async(std::bind(&AsyncSpawn::onExit, this)));
     eventListeners.push_back(std::async(std::bind(&AsyncSpawn::onMessage, this)));
     eventListeners.push_back(std::async(std::bind(&AsyncSpawn::onError, this)));
+    eventListeners.push_back(std::async(std::bind(&AsyncSpawn::onExit, this)));
 }
 
 void AsyncSpawn::waitEvents(){

@@ -8,11 +8,12 @@
 
 #define PID_T unsigned int
 
-#ifdef WIN32
+typedef void* HANDLE;
 typedef void* ProcStartInfo;
+
+#ifdef WIN32
 #define PipeHandle HANDLE
 #else
-typedef void* HANDLE;
 #define PipeHandle int
 #endif
 

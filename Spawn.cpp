@@ -1,7 +1,5 @@
 #include <stdio.h>
 #include <fstream>
-#include <iostream>
-#include <unistd.h>
 #include "Spawn.h"
 
 #define READ_BUFFER_SIZE 255
@@ -10,6 +8,13 @@ using namespace spawnchild;
 
 #ifdef WIN32
 #include <windows.h>
+#include <processthreadsapi.h>
+#include <strsafe.h>
+
+#define _SILENCE_EXPERIMENTAL_FILESYSTEM_DEPRECATION_WARNING
+#include <experimental/filesystem>
+
+namespace fs = std::experimental::filesystem;
 
 bool Spawn::isAlive(){
     bool alive = false;
@@ -22,10 +27,12 @@ bool Spawn::isAlive(){
 }
 
 std::string getCmdLine(std::vector<char *> args){
-    std::string cmdline;
+    std::string cmdline = "";
     for (const char* arg : args){
-        cmdline += arg;
-        cmdline += " ";
+        if (arg) {
+            cmdline += arg;
+            cmdline += " ";
+        }
     }
 
     return cmdline;
@@ -34,8 +41,16 @@ void Spawn::runProcess(std::vector<char *> args){
     STARTUPINFO startInfo;
     PROCESS_INFORMATION piProcInfo;
     this->redirected_stdio->replace_stdio(&startInfo);
-    if (!CreateProcess(this->path.c_str(), getCmdLine(args).c_str(), nullptr, nullptr, true, 0, nullptr, nullptr, &startInfo, &piProcInfo)){
-        throw std::runtime_error("Process was not created " + this->path);
+    auto cmdStr = getCmdLine(args);
+    LPSTR cmdLine = (LPSTR)cmdStr.c_str();
+    if (!CreateProcessA(this->path.c_str(), cmdLine, nullptr, nullptr, true, 0, nullptr, nullptr, &startInfo, &piProcInfo)){
+        int error = GetLastError();
+        LPSTR messageBuffer = nullptr;
+        auto cur = fs::current_path();
+        size_t size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+            NULL, error, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&messageBuffer, 0, NULL);
+
+        throw std::runtime_error("Process was not created " + this->path + ", " +  messageBuffer);
     }
 
     this->processPID = piProcInfo.dwProcessId;
@@ -45,6 +60,8 @@ void Spawn::runProcess(std::vector<char *> args){
 #include <sys/wait.h>
 #include <sys/types.h>
 #include <fcntl.h>
+#include <iostream>
+
 
 bool Spawn::isAlive(){
     bool alive = false;

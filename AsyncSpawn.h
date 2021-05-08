@@ -19,13 +19,13 @@ namespace spawnchild{
         AsyncSpawn(std::string&, std::vector<std::string>&, AsyncSpawnEvents);
         ~AsyncSpawn();
         void send(std::string);
+        void waitEvents();
+        void killProcess();
     protected:
         void onExit();
         void onMessage();
         void onError();
 
-        void killProcess();
-        void waitEvents();
         void connectEvents();
     };
 }

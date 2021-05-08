@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <unistd.h>
 #include "Spawn.h"
 
 std::string readStream(int fd, bool isBlocking);
@@ -7,6 +6,8 @@ std::string readStream(int fd, bool isBlocking);
 using namespace spawnchild;
 #ifdef WIN32
 #include  <windows.h>
+#include <namedpipeapi.h>
+#include <exception>
 
 StdioPipe::StdioPipe(){
     bool isException = false;
@@ -21,11 +22,11 @@ StdioPipe::StdioPipe(){
     isException |= !CreatePipe(this->redirect_err, this->redirect_err + 1, &saAttr, 0);
 
     if (isException){
-        std::__throw_runtime_error("Failed to create alternate pipes");
+        std::_Xruntime_error("Failed to create alternate pipes");
     }
 
     if ( ! SetHandleInformation(this->redirect_in[1], HANDLE_FLAG_INHERIT, 0) ){
-        std::__throw_runtime_error("write handle to the pipe for STDIN is inherited.");
+        std::_Xruntime_error("write handle to the pipe for STDIN is inherited.");
     }
 }
 
@@ -33,9 +34,9 @@ void StdioPipe::replace_stdio(ProcStartInfo startInfo){
     STARTUPINFO* implStartInfo = (STARTUPINFO*)startInfo;
     ZeroMemory(implStartInfo, sizeof(STARTUPINFO));
     implStartInfo->cb = sizeof(STARTUPINFO);
-    implStartInfo->hStdError = this->redirect_err + 1;
-    implStartInfo->hStdOutput = this->redirect_out + 1;
-    implStartInfo->hStdInput = this->redirect_in;
+    implStartInfo->hStdError = this->redirect_err[1];
+    implStartInfo->hStdOutput = this->redirect_out[1];
+    implStartInfo->hStdInput = this->redirect_in[0];
     implStartInfo->dwFlags |= STARTF_USESTDHANDLES;
 }
 
@@ -50,12 +51,19 @@ StdioPipe::~StdioPipe(){
     CloseHandle(this->redirect_err[1]);
 }
 
+bool isDataAvailable(int fd, bool lie) {
+    int availReadSize;
+    return lie || (PeekNamedPipe((HANDLE)fd, nullptr, NULL, nullptr, (LPDWORD)&availReadSize, nullptr) && availReadSize > 0);
+}
+
 std::string readStream(int fd, bool isBlocking){
     char readBuffer[READ_BUFFER_SIZE];
     DWORD bytesRead = 0;
-    std::string result;
+    std::string result = "";
 
-    while (ReadFile(HANDLE(fd), readBuffer, READ_BUFFER_SIZE - 1, &bytesRead, nullptr) && bytesRead > 0){
+    ZeroMemory(readBuffer, READ_BUFFER_SIZE);
+    while (isDataAvailable(fd, isBlocking) && ReadFile(HANDLE(fd), readBuffer, READ_BUFFER_SIZE - 1, &bytesRead, nullptr) && bytesRead > 0){
+        readBuffer[bytesRead - 1] = 0;
         result += readBuffer;
     }
 
@@ -63,7 +71,8 @@ std::string readStream(int fd, bool isBlocking){
 }
 
 void StdioPipe::writeIn(std::string data){
-    WriteFile(this->redirect_in[1], data.c_str(), data.size(), nullptr, nullptr);
+    int size = 0;
+    WriteFile(this->redirect_in[1], data.c_str(), data.size(), (LPDWORD)&size, nullptr);
     if (data.c_str()[data.size() - 1] != '\n'){
         WriteFile(this->redirect_in[1], "\n", 1, nullptr, nullptr);
     }
@@ -72,6 +81,7 @@ void StdioPipe::writeIn(std::string data){
 
 #else
 #include <poll.h>
+#include <unistd.h>
 
 StdioPipe::StdioPipe(){
     bool isException = false;

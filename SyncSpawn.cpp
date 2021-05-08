@@ -8,15 +8,16 @@ using namespace spawnchild;
 
 void SyncSpawn::sync(){
     this->redirected_stdio->writeIn(this->input);
-    WaitForSingleObject(this->processHandle, 0);
+    this->status = WaitForSingleObject(this->processHandle, INFINITE);
     if (this->status != STILL_ACTIVE){
         int returnedStatus = this->status;
         if (returnedStatus){
             std::string msg = this->processPID + " Program was terminated with non zero code";
-            std::__throw_runtime_error(msg.c_str());
+            std::_Xruntime_error(msg.c_str());
         }
     }else{
-        throw std::runtime_error("Process: "+ this->path +": " + this->redirected_stdio->readErr());
+        std::string msg = "Process: " + this->path + ": " + this->redirected_stdio->readErr();
+        std::_Xruntime_error(msg.c_str());
     }
 }
 #else
@@ -41,6 +42,7 @@ void SyncSpawn::sync(){
 SyncSpawn::SyncSpawn(std::string& processPath, std::vector<std::string>& args, std::string& input)
 : Spawn(processPath, args){
     this->input = input;
+    this->redirected_stdio->setReadBlocking(false);
     sync();
 }
 

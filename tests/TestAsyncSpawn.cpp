@@ -1,14 +1,23 @@
 #include "../AsyncSpawn.h"
-#include <unistd.h>
-#include <catch2/catch_all.hpp>
 
+#include <catch2/catch_all.hpp>
+#ifdef WIN32
+#define CHILD_PROCESS_PATH "./Debug/child.exe"
+#else
+#define CHILD_PROCESS_PATH "./child.exe"
+#endif
 using namespace spawnchild;
 
-
+#ifdef WIN32
+#include <Windows.h>
+#else
+#include <unistd.h>
+#endif
 TEST_CASE("Async Spawn ", "[AsyncSpawn]"){
     std::vector<std::string> args;
-    std::string processPath = "./child";
+    std::string processPath = CHILD_PROCESS_PATH;
     AsyncSpawnEvents events;
+    std::string res = "";
 
     bool finished = false;
     bool isExited = false;
@@ -23,8 +32,8 @@ TEST_CASE("Async Spawn ", "[AsyncSpawn]"){
         mtx.unlock();
     };
 
-    events.onMessage = [](std::string data){
-        std::string got = data;
+    events.onMessage = [&res](std::string data){
+        res += data;
     };
     AsyncSpawn childProg(processPath, args, events);
 
@@ -32,7 +41,6 @@ TEST_CASE("Async Spawn ", "[AsyncSpawn]"){
 
     childProg.send("0");
 
-    while (!finished);
-
-    REQUIRE(isExited);
+    childProg.waitEvents();
+    REQUIRE((isExited && res.size() > 0));
 }
