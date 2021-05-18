@@ -8,7 +8,10 @@ using namespace spawnchild;
 
 void SyncSpawn::sync(){
     this->redirected_stdio->writeIn(this->input);
-    this->status = WaitForSingleObject(this->processHandle, INFINITE);
+    while (this->isAlive()){
+        this->output += this->redirected_stdio->readOut();
+    }
+    
     if (this->status != STILL_ACTIVE){
         int returnedStatus = this->status;
         if (returnedStatus){
@@ -25,7 +28,9 @@ void SyncSpawn::sync(){
 
 void SyncSpawn::sync(){
     this->redirected_stdio->writeIn(this->input);
-    waitpid(this->processPID, &this->status, 0);
+    while(!waitpid(this->processPID, &this->status, WNOHANG)){
+        this->output += redirected_stdio->readOut();
+    }
     if (WIFEXITED(this->status)){
         int returnedStatus = WEXITSTATUS(this->status);
         if (returnedStatus){
@@ -42,10 +47,11 @@ void SyncSpawn::sync(){
 SyncSpawn::SyncSpawn(std::string& processPath, std::vector<std::string>& args, std::string& input)
 : Spawn(processPath, args){
     this->input = input;
+    this->output = "";
     this->redirected_stdio->setReadBlocking(false);
     sync();
 }
 
 std::string SyncSpawn::getResult(){
-    return this->redirected_stdio->readOut();
+    return this->output;
 }
