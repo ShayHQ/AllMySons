@@ -28,8 +28,10 @@ void SyncSpawn::sync(){
 
 void SyncSpawn::sync(){
     this->redirected_stdio->writeIn(this->input);
+    std::string err = "";
     while(!waitpid(this->processPID, &this->status, WNOHANG)){
         this->output += redirected_stdio->readOut();
+        err += redirected_stdio->readErr();
     }
     if (WIFEXITED(this->status)){
         int returnedStatus = WEXITSTATUS(this->status);
@@ -38,7 +40,7 @@ void SyncSpawn::sync(){
             std::__throw_runtime_error(msg.c_str());
         }
     }else{
-        throw std::runtime_error("Process: "+ this->path +": " + this->redirected_stdio->readErr());
+        throw std::runtime_error("Process: "+ this->path +": " + err);
     }
 }
 
