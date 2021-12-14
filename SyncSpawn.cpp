@@ -11,7 +11,8 @@ void SyncSpawn::sync(){
     while (this->isAlive()){
         this->output += this->redirected_stdio->readOut();
     }
-    
+    this->output += redirected_stdio->readOut();
+
     if (this->status != STILL_ACTIVE){
         int returnedStatus = this->status;
         if (returnedStatus){
@@ -33,6 +34,8 @@ void SyncSpawn::sync(){
         this->output += redirected_stdio->readOut();
         err += redirected_stdio->readErr();
     }
+    this->output += redirected_stdio->readOut();
+    
     if (WIFEXITED(this->status)){
         int returnedStatus = WEXITSTATUS(this->status);
         if (returnedStatus){
