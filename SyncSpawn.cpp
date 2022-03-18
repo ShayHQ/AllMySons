@@ -39,7 +39,7 @@ void SyncSpawn::sync(){
     if (WIFEXITED(this->status)){
         int returnedStatus = WEXITSTATUS(this->status);
         if (returnedStatus){
-            std::string msg = this->processPID + " Program was terminated with non zero code";
+            std::string msg = std::to_string(this->processPID) + " " + this->path + " Program was terminated with non zero code";
             std::__throw_runtime_error(msg.c_str());
         }
     }else{
